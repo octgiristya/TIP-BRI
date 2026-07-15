@@ -1,6 +1,11 @@
 import pandas as pd
-import math
 from app.database import get_database
+
+def sanitize_for_mongo(record):
+    for k, v in record.items():
+        if isinstance(v, int) and (v > 2**63 - 1 or v < -2**63):
+            record[k] = str(v)
+    return record
 
 async def import_excel_to_mongo(file_path: str, collection_name: str) -> dict:
     """
@@ -18,6 +23,9 @@ async def import_excel_to_mongo(file_path: str, collection_name: str) -> dict:
 
         # Convert to dictionary records
         records = df.to_dict(orient="records")
+        
+        # Sanitize huge integers that crash MongoDB
+        records = [sanitize_for_mongo(r) for r in records]
 
         db = get_database()
         collection = db[collection_name]
