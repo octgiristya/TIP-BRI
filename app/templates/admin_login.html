@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+    <div class="col-md-5 col-lg-4 fade-in-up">
+        <div class="glass-card text-center py-5 px-4">
+            <i class="fa-solid fa-shield-cat text-primary mb-4" style="font-size: 4rem;"></i>
+            <h3 class="fw-bold mb-1">Admin Portal</h3>
+            <p class="text-secondary mb-4">God Mode Authentication</p>
+
+            {% if error %}
+            <div class="alert alert-danger bg-danger-soft border-0 text-danger" role="alert">
+                <i class="fa-solid fa-triangle-exclamation me-2"></i> {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="/godcia/login">
+                <div class="mb-4">
+                    <input type="text" name="totp" class="form-control form-control-lg text-center" placeholder="Enter 6-digit TOTP" maxlength="6" autocomplete="off" required style="letter-spacing: 0.5rem; font-size: 1.5rem; font-weight: bold;">
+                </div>
+                <button type="submit" class="btn btn-primary-glow btn-lg w-100">
+                    <i class="fa-solid fa-unlock-keyhole me-2"></i> Authenticate
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

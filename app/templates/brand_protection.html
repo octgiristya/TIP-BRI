@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="fw-bold mb-0 text-gradient">Brand Protection Dashboard</h2>
+        <p class="text-secondary">Monitoring malicious domains, documents, and social media impersonations.</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    {% for res, data in kpis.items() %}
+    <div class="col-xl-3 col-md-6 fade-in-up delay-{{ loop.index0 * 100 }}">
+        <div class="glass-card h-100">
+            <div class="glass-card-header d-flex justify-content-between align-items-center">
+                <span>{{ res }}</span>
+                {% if res == 'Website' %}
+                    <i class="fa-solid fa-globe text-primary"></i>
+                {% elif res == 'Document' %}
+                    <i class="fa-solid fa-file-pdf text-danger"></i>
+                {% elif res == 'Social Media' %}
+                    <i class="fa-brands fa-twitter text-info"></i>
+                {% else %}
+                    <i class="fa-solid fa-comment-sms text-success"></i>
+                {% endif %}
+            </div>
+            <div class="glass-card-body">
+                <div class="d-flex justify-content-between align-items-end mb-3">
+                    <div>
+                        <div class="kpi-value" data-target="{{ data.total }}">0</div>
+                        <div class="kpi-label">Total Findings</div>
+                    </div>
+                    <div style="height: 60px; width: 60px;">
+                        <canvas id="chart-{{ loop.index }}"></canvas>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <div class="d-flex justify-content-between text-sm mb-1">
+                        <span class="text-success"><i class="fa-solid fa-check-circle me-1"></i>Resolved</span>
+                        <span class="fw-bold">{{ data.resolved }}</span>
+                    </div>
+                    <div class="progress-glass mb-3">
+                        <div class="progress-bar-glow h-100 bg-success" style="width: {{ (data.resolved / data.total * 100)|round if data.total > 0 else 0 }}%"></div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between text-sm mb-1">
+                        <span class="text-danger"><i class="fa-solid fa-times-circle me-1"></i>Not Resolved</span>
+                        <span class="fw-bold">{{ data.not_resolved }}</span>
+                    </div>
+                    <div class="progress-glass">
+                        <div class="progress-bar-glow h-100 bg-danger" style="width: {{ (data.not_resolved / data.total * 100)|round if data.total > 0 else 0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const kpis = {{ kpis|tojson|safe }};
+        let index = 1;
+        for (const [res, data] of Object.entries(kpis)) {
+            const ctx = document.getElementById(`chart-${index}`);
+            if (ctx && data.total > 0) {
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Resolved', 'Not Resolved'],
+                        datasets: [{
+                            data: [data.resolved, data.not_resolved],
+                            backgroundColor: ['#10b981', '#ef4444'],
+                            borderWidth: 0,
+                            cutout: '75%'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false }
+                        }
+                    }
+                });
+            }
+            index++;
+        }
+    });
+</script>
+{% endblock %}

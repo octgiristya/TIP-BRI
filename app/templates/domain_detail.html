@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb bg-transparent p-0 mb-2">
+                <li class="breadcrumb-item"><a href="/account-leak" class="text-secondary text-decoration-none">Account Leak</a></li>
+                <li class="breadcrumb-item active text-primary" aria-current="page">{{ domain }}</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold mb-0 text-gradient">Domain: {{ domain }}</h2>
+        <p class="text-secondary">Viewing detailed account leak records for this domain.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 fade-in-up">
+        <div class="glass-card">
+            <div class="glass-card-header d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-list me-2"></i> Account Leak Details</span>
+            </div>
+            <div class="glass-card-body p-0">
+                <table id="domainDetailTable" class="table-glass">
+                    <thead>
+                        <tr>
+                            <th>Email/Username</th>
+                            <th>Password (Masked)</th>
+                            <th>Validation</th>
+                            <th>Reset Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in records %}
+                        <tr>
+                            <td>{{ r.get('Email', r.get('Username', '-')) }}</td>
+                            <td>********</td>
+                            <td>
+                                {% set val = r.get('Validation', '') %}
+                                {% if not val or val|string|lower == 'nan' %}
+                                    <span class="badge-glass bg-success-soft">Valid</span>
+                                {% elif val|string|lower == 'valid' %}
+                                    <span class="badge-glass bg-success-soft">Valid</span>
+                                {% else %}
+                                    <span class="badge-glass bg-danger-soft">{{ val }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set res = r.get('Reset Password Status', '') %}
+                                {% if not res or res|string|lower == 'nan' or 'not' in res|string|lower %}
+                                    <span class="badge-glass bg-warning-soft">Not Reset</span>
+                                {% else %}
+                                    <span class="badge-glass bg-primary bg-opacity-25">{{ res }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ r.get('Leak Date', '-') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        new simpleDatatables.DataTable("#domainDetailTable", {
+            searchable: true,
+            fixedHeight: false,
+            perPage: 15
+        });
+    });
+</script>
+{% endblock %}

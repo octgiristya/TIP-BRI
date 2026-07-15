@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="fw-bold mb-0 text-gradient">Card Leak Dashboard</h2>
+            <p class="text-secondary">Monitoring compromised credit card information.</p>
+        </div>
+        <button class="btn btn-primary-glow" onclick="document.getElementById('detail-table').scrollIntoView({behavior: 'smooth'})">
+            <i class="fa-solid fa-list me-2"></i> View Detail Table
+        </button>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <!-- Total KPI -->
+    <div class="col-xl-3 col-md-6 fade-in-up">
+        <div class="glass-card h-100 d-flex flex-column justify-content-center align-items-center text-center">
+            <div class="glass-card-header w-100 border-0 pb-0 text-start">Total Card Leaks</div>
+            <div class="glass-card-body pt-0">
+                <div class="kpi-value" style="font-size: 4rem;" data-target="{{ dashboard.total }}">0</div>
+                <div class="text-secondary mt-2"><i class="fa-solid fa-arrow-trend-up text-danger me-1"></i> +12% from last week</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Donut: Card System -->
+    <div class="col-xl-3 col-md-6 fade-in-up delay-100">
+        <div class="glass-card h-100">
+            <div class="glass-card-header">Card Systems</div>
+            <div class="glass-card-body d-flex justify-content-center">
+                <div style="height: 200px; width: 100%;">
+                    <canvas id="systemChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Donut: Validation -->
+    <div class="col-xl-3 col-md-6 fade-in-up delay-200">
+        <div class="glass-card h-100">
+            <div class="glass-card-header">Validation Status</div>
+            <div class="glass-card-body d-flex justify-content-center">
+                <div style="height: 200px; width: 100%;">
+                    <canvas id="validationChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Blockir Status -->
+    <div class="col-xl-3 col-md-6 fade-in-up delay-300">
+        <div class="glass-card h-100">
+            <div class="glass-card-header">Block Status</div>
+            <div class="glass-card-body">
+                <h3 class="fw-bold mb-4">
+                    <span class="text-danger">{{ dashboard.blockir.blocked }}</span> / <span class="text-secondary">{{ dashboard.total }}</span>
+                </h3>
+                
+                <div class="d-flex justify-content-between text-sm mb-1">
+                    <span class="text-danger"><i class="fa-solid fa-ban me-1"></i>Blocked</span>
+                    <span class="fw-bold">{{ dashboard.blockir.blocked }}</span>
+                </div>
+                <div class="progress-glass mb-4">
+                    <div class="progress-bar-glow h-100 bg-danger" style="width: {{ (dashboard.blockir.blocked / dashboard.total * 100)|round if dashboard.total > 0 else 0 }}%"></div>
+                </div>
+                
+                <div class="d-flex justify-content-between text-sm mb-1">
+                    <span class="text-warning"><i class="fa-solid fa-triangle-exclamation me-1"></i>Not Blocked</span>
+                    <span class="fw-bold">{{ dashboard.blockir.not_blocked }}</span>
+                </div>
+                <div class="progress-glass">
+                    <div class="progress-bar-glow h-100 bg-warning" style="width: {{ (dashboard.blockir.not_blocked / dashboard.total * 100)|round if dashboard.total > 0 else 0 }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Table Section -->
+<div class="row" id="detail-table">
+    <div class="col-12 fade-in-up delay-400">
+        <div class="glass-card">
+            <div class="glass-card-header d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-table me-2"></i> Card Leak Details</span>
+                <div>
+                    <button class="btn btn-sm btn-glass me-2" onclick="exportData('csv')"><i class="fa-solid fa-file-csv"></i> CSV</button>
+                    <button class="btn btn-sm btn-glass" onclick="exportData('excel')"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                </div>
+            </div>
+            <div class="glass-card-body p-0">
+                <table id="cardTable" class="table-glass">
+                    <thead>
+                        <tr>
+                            <th>Card Number</th>
+                            <th>Bank Name</th>
+                            <th>System</th>
+                            <th>Validation</th>
+                            <th>Block Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Populated by DataTables -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dashboard = {{ dashboard|tojson|safe }};
+        
+        // System Chart
+        const sysCtx = document.getElementById('systemChart');
+        if (sysCtx) {
+            new Chart(sysCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(dashboard.card_systems),
+                    datasets: [{
+                        data: Object.values(dashboard.card_systems),
+                        backgroundColor: ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6'],
+                        borderWidth: 0,
+                        cutout: '65%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+        
+        // Validation Chart
+        const valCtx = document.getElementById('validationChart');
+        if (valCtx) {
+            new Chart(valCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Valid', 'Invalid'],
+                    datasets: [{
+                        data: [dashboard.validation.valid, dashboard.validation.invalid],
+                        backgroundColor: ['#10b981', '#ef4444'],
+                        borderWidth: 0,
+                        cutout: '65%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+                    }
+                }
+            });
+        }
+
+        // Initialize Simple-DataTables
+        const dataTable = new simpleDatatables.DataTable("#cardTable", {
+            searchable: true,
+            fixedHeight: false,
+            perPage: 10,
+            ajax: {
+                url: "/api/card-leak-data",
+                load: function(query, cb) {
+                    // This is a simple wrapper to adapt Simple-DataTables to our API format
+                    let url = "/api/card-leak-data";
+                    let params = new URLSearchParams();
+                    if (query && query.search) params.append("search_value", query.search);
+                    params.append("start", query.skip || 0);
+                    params.append("length", query.limit || 10);
+                    
+                    fetch(url + "?" + params.toString())
+                    .then(res => res.json())
+                    .then(res => {
+                        let tableData = {
+                            headings: ["Card Number", "Bank Name", "System", "Validation", "Block Status", "Leak Date"],
+                            data: res.data.map(item => [
+                                item["Card Number"] || "-",
+                                item["Bank Name"] || "-",
+                                item["card_system"] || "-",
+                                `<span class="badge-glass ${item["Validation"] === 'Valid' || !item["Validation"] ? 'bg-success-soft' : 'bg-danger-soft'}">${item["Validation"] || 'Valid'}</span>`,
+                                `<span class="badge-glass ${item["Blockir Status"] && item["Blockir Status"].toLowerCase().includes('block') && !item["Blockir Status"].toLowerCase().includes('not') ? 'bg-danger-soft' : 'bg-warning-soft'}">${item["Blockir Status"] || 'Not Blocked'}</span>`,
+                                item["Leak Date"] ? new Date(item["Leak Date"]).toLocaleDateString() : "-"
+                            ])
+                        };
+                        cb(tableData);
+                    });
+                }
+            }
+        });
+    });
+    
+    function exportData(type) {
+        window.showToast("Exporting " + type + "...", "info");
+        // Implementation for export goes here.
+    }
+</script>
+{% endblock %}

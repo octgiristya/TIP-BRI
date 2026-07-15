@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="fw-bold mb-0 text-gradient"><i class="fa-solid fa-gear me-2"></i> Admin Portal</h2>
+        <p class="text-secondary">Upload new Excel files to update the dashboard.</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-xl-6 fade-in-up">
+        <div class="glass-card h-100">
+            <div class="glass-card-header"><i class="fa-solid fa-upload me-2"></i> Data Upload</div>
+            <div class="glass-card-body">
+                <form id="uploadForm">
+                    <div class="mb-4">
+                        <label class="form-label text-secondary">Target Collection</label>
+                        <select class="form-select" name="collection" required>
+                            <option value="brand_protection">Brand Protection</option>
+                            <option value="card_leak">Card Leak</option>
+                            <option value="account_leak">Account Leak</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label text-secondary">Excel File (.xlsx)</label>
+                        <input class="form-control" type="file" name="file" accept=".xlsx, .xls" required>
+                        <div class="form-text text-secondary mt-2">Max file size: 100MB. Uploading will replace the entire collection.</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary-glow w-100" id="uploadBtn">
+                        <i class="fa-solid fa-cloud-arrow-up me-2"></i> Upload & Replace
+                    </button>
+                    
+                    <!-- Progress Bar -->
+                    <div class="progress-glass mt-3 d-none" id="uploadProgressContainer">
+                        <div class="progress-bar-glow h-100 bg-success progress-bar-striped progress-bar-animated" id="uploadProgress" style="width: 0%"></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-6 fade-in-up delay-100">
+        <div class="glass-card h-100">
+            <div class="glass-card-header"><i class="fa-solid fa-clock-rotate-left me-2"></i> Upload History</div>
+            <div class="glass-card-body p-0" style="max-height: 400px; overflow-y: auto;">
+                <table class="table-glass" id="historyTable">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Collection</th>
+                            <th>Records</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="4" class="text-center py-4">Loading history...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('uploadForm');
+        const btn = document.getElementById('uploadBtn');
+        const progressContainer = document.getElementById('uploadProgressContainer');
+        const progress = document.getElementById('uploadProgress');
+        
+        loadHistory();
+        
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const fileInput = document.querySelector('input[type="file"]');
+            if (fileInput.files.length === 0) return;
+            
+            const file = fileInput.files[0];
+            if (file.size > 100 * 1024 * 1024) {
+                window.showToast('File exceeds 100MB limit', 'error');
+                return;
+            }
+            
+            const formData = new FormData(form);
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-2"></i> Uploading...';
+            progressContainer.classList.remove('d-none');
+            progress.style.width = '10%';
+            
+            // XMLHttpRequest to track progress
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/godcia/upload', true);
+            
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = (e.loaded / e.total) * 100;
+                    progress.style.width = percentComplete + '%';
+                }
+            };
+            
+            xhr.onload = function() {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up me-2"></i> Upload & Replace';
+                
+                if (xhr.status === 200) {
+                    const res = JSON.parse(xhr.responseText);
+                    if (res.success) {
+                        progress.style.width = '100%';
+                        window.showToast(`Success! Inserted ${res.inserted_count} records.`);
+                        form.reset();
+                        setTimeout(() => progressContainer.classList.add('d-none'), 2000);
+                        loadHistory();
+                    } else {
+                        progressContainer.classList.add('d-none');
+                        window.showToast('Error: ' + res.message, 'error');
+                    }
+                } else {
+                    progressContainer.classList.add('d-none');
+                    window.showToast('Upload failed with status: ' + xhr.status, 'error');
+                }
+            };
+            
+            xhr.onerror = function() {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up me-2"></i> Upload & Replace';
+                progressContainer.classList.add('d-none');
+                window.showToast('Network error occurred during upload', 'error');
+            };
+            
+            xhr.send(formData);
+        });
+        
+        function loadHistory() {
+            fetch('/godcia/history')
+                .then(res => res.json())
+                .then(data => {
+                    const tbody = document.querySelector('#historyTable tbody');
+                    if (!data.history || data.history.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4">No history found</td></tr>';
+                        return;
+                    }
+                    
+                    tbody.innerHTML = data.history.map(h => `
+                        <tr>
+                            <td>${new Date(h.timestamp * 1000).toLocaleString()}</td>
+                            <td><span class="badge-glass bg-primary bg-opacity-25">${h.collection}</span></td>
+                            <td>${h.inserted_count}</td>
+                            <td>
+                                ${h.success ? 
+                                    '<span class="text-success"><i class="fa-solid fa-check-circle me-1"></i>Success</span>' : 
+                                    '<span class="text-danger"><i class="fa-solid fa-times-circle me-1"></i>Failed</span>'}
+                            </td>
+                        </tr>
+                    `).join('');
+                });
+        }
+    });
+</script>
+{% endblock %}

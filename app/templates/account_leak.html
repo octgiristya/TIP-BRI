@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2 class="fw-bold mb-0 text-gradient">Account Leak Dashboard</h2>
+        <p class="text-secondary">Monitoring compromised employee and customer accounts.</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <!-- Total KPI -->
+    <div class="col-xl-4 fade-in-up">
+        <div class="glass-card h-100 d-flex flex-column justify-content-center align-items-center text-center">
+            <div class="glass-card-header w-100 border-0 pb-0 text-start">Total Account Leaks</div>
+            <div class="glass-card-body pt-0">
+                <div class="kpi-value" style="font-size: 5rem;" data-target="{{ dashboard.total }}">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Validation Bar Chart -->
+    <div class="col-xl-4 fade-in-up delay-100">
+        <div class="glass-card h-100">
+            <div class="glass-card-header">Validation Status</div>
+            <div class="glass-card-body">
+                <div style="height: 200px; width: 100%;">
+                    <canvas id="validationChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Status Bar Chart -->
+    <div class="col-xl-4 fade-in-up delay-200">
+        <div class="glass-card h-100">
+            <div class="glass-card-header">Password Reset Status</div>
+            <div class="glass-card-body">
+                <div style="height: 200px; width: 100%;">
+                    <canvas id="resetChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Domain Summary Table -->
+<div class="row">
+    <div class="col-12 fade-in-up delay-300">
+        <div class="glass-card">
+            <div class="glass-card-header">
+                <i class="fa-solid fa-server me-2"></i> Domain Summary
+            </div>
+            <div class="glass-card-body p-0">
+                <table id="domainTable" class="table-glass">
+                    <thead>
+                        <tr>
+                            <th>Domain (Service Host)</th>
+                            <th>PIC Team</th>
+                            <th>Total Leaks</th>
+                            <th>Password Reset</th>
+                            <th>Not Reset</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in dashboard.domains %}
+                        <tr>
+                            <td class="fw-bold">{{ d.domain }}</td>
+                            <td><span class="badge-glass bg-primary bg-opacity-25">{{ d.pic_team }}</span></td>
+                            <td>{{ d.total }}</td>
+                            <td><span class="text-success">{{ d.reset }}</span></td>
+                            <td><span class="text-warning">{{ d.not_reset }}</span></td>
+                            <td>
+                                <a href="/account-leak/domain/{{ d.domain }}" class="btn btn-sm btn-glass">
+                                    <i class="fa-solid fa-eye text-primary"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dashboard = {{ dashboard|tojson|safe }};
+        
+        // Validation Bar Chart
+        const valCtx = document.getElementById('validationChart');
+        if (valCtx) {
+            new Chart(valCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Valid', 'Invalid'],
+                    datasets: [{
+                        label: 'Accounts',
+                        data: [dashboard.validation.valid, dashboard.validation.invalid],
+                        backgroundColor: ['#10b981', '#ef4444'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+        
+        // Reset Bar Chart
+        const resCtx = document.getElementById('resetChart');
+        if (resCtx) {
+            new Chart(resCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Reset', 'Not Reset'],
+                    datasets: [{
+                        label: 'Accounts',
+                        data: [dashboard.reset_status.reset, dashboard.reset_status.not_reset],
+                        backgroundColor: ['#3b82f6', '#f59e0b'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // Initialize DataTable
+        new simpleDatatables.DataTable("#domainTable", {
+            searchable: true,
+            fixedHeight: false,
+            perPage: 10
+        });
+    });
+</script>
+{% endblock %}

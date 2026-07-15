@@ -1,0 +1,249 @@
+:root {
+    --bg-dark: #0f172a;
+    --bg-panel: rgba(30, 41, 59, 0.7);
+    --bg-panel-hover: rgba(30, 41, 59, 0.9);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --accent-blue: #3b82f6;
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+    --accent-yellow: #f59e0b;
+    --border-color: rgba(255, 255, 255, 0.1);
+    --glass-blur: blur(12px);
+    --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    margin: 0;
+    overflow-x: hidden;
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.15) 0px, transparent 50%);
+    background-attachment: fixed;
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+    background: var(--bg-panel);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    box-shadow: var(--shadow-soft);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+    overflow: hidden;
+}
+
+.glass-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.6);
+    background: var(--bg-panel-hover);
+}
+
+.glass-card-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}
+
+.glass-card-body {
+    padding: 1.5rem;
+}
+
+/* KPI Numbers */
+.kpi-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(to right, #60a5fa, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.2;
+}
+
+.kpi-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+}
+
+/* Navigation */
+.navbar-glass {
+    background: rgba(15, 23, 42, 0.8);
+    backdrop-filter: var(--glass-blur);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.nav-link {
+    color: var(--text-secondary) !important;
+    font-weight: 500;
+    transition: color 0.2s;
+    border-radius: 8px;
+    padding: 0.5rem 1rem !important;
+    margin: 0 0.25rem;
+}
+
+.nav-link:hover, .nav-link.active {
+    color: var(--text-primary) !important;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Progress Bars */
+.progress-glass {
+    background: rgba(255, 255, 255, 0.1);
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar-glow {
+    background: linear-gradient(90deg, var(--accent-blue), #60a5fa);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+    border-radius: 4px;
+}
+
+/* Tables */
+.table-glass {
+    color: var(--text-primary);
+    width: 100%;
+    margin-bottom: 0;
+}
+
+.table-glass th {
+    background: rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid var(--border-color);
+    border-top: none;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    padding: 1rem;
+}
+
+.table-glass td {
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.table-glass tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* Simple Datatables custom styling */
+.dataTable-wrapper .dataTable-top, 
+.dataTable-wrapper .dataTable-bottom {
+    padding: 1rem;
+}
+.dataTable-selector, .dataTable-input {
+    background: rgba(0,0,0,0.2);
+    border: 1px solid var(--border-color);
+    color: white;
+    border-radius: 6px;
+    padding: 0.375rem 0.75rem;
+}
+.dataTable-selector:focus, .dataTable-input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+}
+.dataTable-pagination a {
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+}
+.dataTable-pagination .active a {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+}
+.dataTable-pagination a:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+/* Buttons */
+.btn-glass {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    backdrop-filter: blur(4px);
+    transition: all 0.3s;
+}
+
+.btn-glass:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.btn-primary-glow {
+    background: var(--accent-blue);
+    color: white;
+    border: none;
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.4);
+    transition: all 0.3s;
+}
+
+.btn-primary-glow:hover {
+    background: #2563eb;
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.6);
+    transform: translateY(-1px);
+}
+
+/* Animations */
+.fade-in-up {
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Delay classes for staggered animations */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+
+/* Utilities */
+.text-gradient {
+    background: linear-gradient(to right, #f8fafc, #94a3b8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.bg-success-soft { background: rgba(16, 185, 129, 0.1); color: #34d399; }
+.bg-danger-soft { background: rgba(239, 68, 68, 0.1); color: #f87171; }
+.bg-warning-soft { background: rgba(245, 158, 11, 0.1); color: #fbbf24; }
+
+.badge-glass {
+    padding: 0.35em 0.65em;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.75rem;
+}
+
+/* Form Controls */
+.form-control, .form-select {
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+.form-control:focus, .form-select:focus {
+    background-color: rgba(0, 0, 0, 0.3);
+    border-color: var(--accent-blue);
+    color: var(--text-primary);
+    box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25);
+}
+.form-control::placeholder {
+    color: var(--text-secondary);
+}
