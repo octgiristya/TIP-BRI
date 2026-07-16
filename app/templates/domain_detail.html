@@ -24,8 +24,9 @@
                 <table id="domainDetailTable" class="table-glass">
                     <thead>
                         <tr>
-                            <th>Email/Username</th>
-                            <th>Password (Masked)</th>
+                            <th>Username / Login</th>
+                            <th>Source Type</th>
+                            <th>Malware</th>
                             <th>Validation</th>
                             <th>Reset Status</th>
                             <th>Date</th>
@@ -34,27 +35,31 @@
                     <tbody>
                         {% for r in records %}
                         <tr>
-                            <td>{{ r.get('Email', r.get('Username', '-')) }}</td>
-                            <td>********</td>
+                            <td>{{ r.get('login', '-') }}</td>
+                            <td>{{ r.get('source_type', '-') }}</td>
+                            <td><span class="badge-glass bg-danger bg-opacity-25">{{ r.get('malware', '-') }}</span></td>
                             <td>
                                 {% set val = r.get('Validation', '') %}
-                                {% if not val or val|string|lower == 'nan' %}
-                                    <span class="badge-glass bg-success-soft">Valid</span>
-                                {% elif val|string|lower == 'valid' %}
+                                {% if not val or val|string|lower == 'nan' or 'not' not in val|string|lower %}
                                     <span class="badge-glass bg-success-soft">Valid</span>
                                 {% else %}
-                                    <span class="badge-glass bg-danger-soft">{{ val }}</span>
+                                    <span class="badge-glass bg-danger-soft">Not Valid</span>
                                 {% endif %}
                             </td>
                             <td>
                                 {% set res = r.get('Reset Password Status', '') %}
-                                {% if not res or res|string|lower == 'nan' or 'not' in res|string|lower %}
-                                    <span class="badge-glass bg-warning-soft">Not Reset</span>
-                                {% else %}
-                                    <span class="badge-glass bg-primary bg-opacity-25">{{ res }}</span>
-                                {% endif %}
+                                {% set is_reset = res and 'reset' in res|string|lower and 'not' not in res|string|lower %}
+                                <div class="form-check form-switch d-inline-block">
+                                    <input class="form-check-input progress-switch" type="checkbox" role="switch" 
+                                           data-id="{{ r.get('_id') }}" 
+                                           {% if is_reset %}checked{% endif %}
+                                           onchange="toggleReset('{{ r.get('_id') }}', this)">
+                                    <span class="ms-1 text-sm text-secondary switch-label">
+                                        {% if is_reset %}Done{% else %}Not Reset{% endif %}
+                                    </span>
+                                </div>
                             </td>
-                            <td>{{ r.get('Leak Date', '-') }}</td>
+                            <td>{{ r.get('date_first_seen', '-')|string|truncate(10, True, '') }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -74,5 +79,34 @@
             perPage: 15
         });
     });
+    
+    function toggleReset(recordId, checkbox) {
+        const label = checkbox.nextElementSibling;
+        const isChecked = checkbox.checked;
+        
+        // Optimistic UI update
+        label.textContent = isChecked ? "Done" : "Not Reset";
+        
+        fetch(`/api/account-leak/toggle-reset/${recordId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                // Revert on error
+                checkbox.checked = !isChecked;
+                label.textContent = !isChecked ? "Done" : "Not Reset";
+                window.showToast('Failed to update status', 'error');
+            }
+        })
+        .catch(err => {
+            checkbox.checked = !isChecked;
+            label.textContent = !isChecked ? "Done" : "Not Reset";
+            window.showToast('Failed to connect to server', 'error');
+        });
+    }
 </script>
 {% endblock %}

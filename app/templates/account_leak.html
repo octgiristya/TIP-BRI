@@ -24,9 +24,7 @@
         <div class="glass-card h-100">
             <div class="glass-card-header">Validation Status</div>
             <div class="glass-card-body">
-                <div style="height: 200px; width: 100%;">
-                    <canvas id="validationChart"></canvas>
-                </div>
+                <div id="validationChart"></div>
             </div>
         </div>
     </div>
@@ -36,9 +34,7 @@
         <div class="glass-card h-100">
             <div class="glass-card-header">Password Reset Status</div>
             <div class="glass-card-body">
-                <div style="height: 200px; width: 100%;">
-                    <canvas id="resetChart"></canvas>
-                </div>
+                <div id="resetChart"></div>
             </div>
         </div>
     </div>
@@ -48,8 +44,14 @@
 <div class="row">
     <div class="col-12 fade-in-up delay-300">
         <div class="glass-card">
-            <div class="glass-card-header">
-                <i class="fa-solid fa-server me-2"></i> Domain Summary
+            <div class="glass-card-header d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-server me-2"></i> Domain Summary</span>
+                <div class="d-flex align-items-center">
+                    <label for="picFilter" class="me-2 text-secondary text-sm">Filter PIC Team:</label>
+                    <select class="form-select select-glass form-select-sm w-auto" id="picFilter">
+                        <option value="">All Teams</option>
+                    </select>
+                </div>
             </div>
             <div class="glass-card-body p-0">
                 <table id="domainTable" class="table-glass">
@@ -92,63 +94,106 @@
         const dashboard = {{ dashboard|tojson|safe }};
         
         // Validation Bar Chart
-        const valCtx = document.getElementById('validationChart');
-        if (valCtx) {
-            new Chart(valCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Valid', 'Invalid'],
-                    datasets: [{
-                        label: 'Accounts',
-                        data: [dashboard.validation.valid, dashboard.validation.invalid],
-                        backgroundColor: ['#10b981', '#ef4444'],
-                        borderRadius: 6
-                    }]
+        const valEl = document.getElementById('validationChart');
+        if (valEl) {
+            const valChart = new ApexCharts(valEl, {
+                chart: {
+                    type: 'bar',
+                    height: 200,
+                    toolbar: { show: false },
+                    animations: { enabled: true }
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-                    },
-                    plugins: { legend: { display: false } }
-                }
+                plotOptions: {
+                    bar: {
+                        borderRadius: 4,
+                        columnWidth: '50%',
+                        distributed: true
+                    }
+                },
+                colors: ['#10b981', '#ef4444'],
+                series: [{
+                    name: 'Accounts',
+                    data: [dashboard.validation.valid, dashboard.validation.invalid]
+                }],
+                xaxis: {
+                    categories: ['Valid', 'Invalid'],
+                    labels: { style: { colors: '#94a3b8' } }
+                },
+                yaxis: {
+                    labels: { style: { colors: '#94a3b8' } }
+                },
+                grid: {
+                    borderColor: 'rgba(255,255,255,0.05)'
+                },
+                legend: { show: false },
+                tooltip: { theme: 'dark' }
             });
+            valChart.render();
         }
         
         // Reset Bar Chart
-        const resCtx = document.getElementById('resetChart');
-        if (resCtx) {
-            new Chart(resCtx, {
-                type: 'bar',
-                data: {
-                    labels: ['Reset', 'Not Reset'],
-                    datasets: [{
-                        label: 'Accounts',
-                        data: [dashboard.reset_status.reset, dashboard.reset_status.not_reset],
-                        backgroundColor: ['#3b82f6', '#f59e0b'],
-                        borderRadius: 6
-                    }]
+        const resEl = document.getElementById('resetChart');
+        if (resEl) {
+            const resChart = new ApexCharts(resEl, {
+                chart: {
+                    type: 'bar',
+                    height: 200,
+                    toolbar: { show: false },
+                    animations: { enabled: true }
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } },
-                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
-                    },
-                    plugins: { legend: { display: false } }
-                }
+                plotOptions: {
+                    bar: {
+                        borderRadius: 4,
+                        columnWidth: '50%',
+                        distributed: true
+                    }
+                },
+                colors: ['#3b82f6', '#f59e0b'],
+                series: [{
+                    name: 'Accounts',
+                    data: [dashboard.reset_status.reset, dashboard.reset_status.not_reset]
+                }],
+                xaxis: {
+                    categories: ['Reset', 'Not Reset'],
+                    labels: { style: { colors: '#94a3b8' } }
+                },
+                yaxis: {
+                    labels: { style: { colors: '#94a3b8' } }
+                },
+                grid: {
+                    borderColor: 'rgba(255,255,255,0.05)'
+                },
+                legend: { show: false },
+                tooltip: { theme: 'dark' }
             });
+            resChart.render();
         }
 
         // Initialize DataTable
-        new simpleDatatables.DataTable("#domainTable", {
+        const dataTable = new simpleDatatables.DataTable("#domainTable", {
             searchable: true,
             fixedHeight: false,
             perPage: 10
         });
+
+        // Populate PIC Teams dropdown
+        const picFilter = document.getElementById("picFilter");
+        if (picFilter && dashboard.domains) {
+            const teams = new Set();
+            dashboard.domains.forEach(d => {
+                if (d.pic_team) teams.add(d.pic_team);
+            });
+            teams.forEach(team => {
+                const opt = document.createElement("option");
+                opt.value = team;
+                opt.textContent = team;
+                picFilter.appendChild(opt);
+            });
+
+            picFilter.addEventListener("change", function() {
+                dataTable.search(this.value);
+            });
+        }
     });
 </script>
 {% endblock %}

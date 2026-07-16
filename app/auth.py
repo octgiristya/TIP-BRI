@@ -6,8 +6,11 @@ from app.config import get_settings
 settings = get_settings()
 
 def verify_totp(secret: str, token: str) -> bool:
+    # Clean the token (remove spaces, etc)
+    clean_token = token.replace(" ", "").strip()
     totp = pyotp.TOTP(secret, interval=30, digest='sha1', digits=6)
-    return totp.verify(token)
+    # Use valid_window=1 to allow for a 30-second clock drift tolerance
+    return totp.verify(clean_token, valid_window=1)
 
 def admin_required(func):
     @wraps(func)

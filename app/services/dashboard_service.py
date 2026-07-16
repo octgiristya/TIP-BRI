@@ -1,16 +1,33 @@
 from app.database import get_database
 from datetime import datetime, timedelta
 
-async def get_brand_protection_kpis(start_date=None, end_date=None):
+async def get_date_filter(col, time_filter: str, date_field: str):
+    if not time_filter or time_filter == "all":
+        return {}
+    max_doc = await col.find({date_field: {"$type": "date"}}, {date_field: 1}).sort(date_field, -1).limit(1).to_list(1)
+    if not max_doc or date_field not in max_doc[0]:
+        return {}
+    latest_date = max_doc[0][date_field]
+    if time_filter == "7d":
+        start_date = latest_date - timedelta(days=7)
+    elif time_filter == "30d":
+        start_date = latest_date - timedelta(days=30)
+    else:
+        return {}
+    return {date_field: {"$gte": start_date}}
+
+async def get_brand_protection_kpis(time_filter="7d"):
     db = get_database()
     col = db["brand_protection"]
     
-    # We will aggregate to find totals by Resource and Progress
+    match_q = await get_date_filter(col, time_filter, "Detection Date")
+    
     pipeline = [
+        {"$match": match_q},
         {"$group": {
             "_id": {
                 "resource": "$Resource",
-                "is_resolved": {"$eq": ["$Progress", "Resolve"]}
+                "is_resolved": {"$eq": ["$Progress", "Resolved"]}
             },
             "count": {"$sum": 1}
         }}
@@ -39,14 +56,17 @@ async def get_brand_protection_kpis(start_date=None, end_date=None):
                 
     return kpis
 
-async def get_card_leak_dashboard(start_date=None, end_date=None):
+async def get_card_leak_dashboard(time_filter="7d"):
     db = get_database()
     col = db["card_leak"]
     
-    total = await col.count_documents({})
+    match_q = await get_date_filter(col, time_filter, "date_first_seen")
+    
+    total = await col.count_documents(match_q)
     
     # Donut card_system
     pipeline_system = [
+        {"$match": match_q},
         {"$group": {"_id": "$card_system", "count": {"$sum": 1}}}
     ]
     sys_results = await col.aggregate(pipeline_system).to_list(length=None)
@@ -54,6 +74,7 @@ async def get_card_leak_dashboard(start_date=None, end_date=None):
     
     # Donut Validation
     pipeline_val = [
+        {"$match": match_q},
         {"$group": {"_id": "$Validation", "count": {"$sum": 1}}}
     ]
     val_results = await col.aggregate(pipeline_val).to_list(length=None)
@@ -72,6 +93,7 @@ async def get_card_leak_dashboard(start_date=None, end_date=None):
             
     # Blockir Status
     pipeline_block = [
+        {"$match": match_q},
         {"$group": {"_id": "$Blockir Status", "count": {"$sum": 1}}}
     ]
     block_results = await col.aggregate(pipeline_block).to_list(length=None)
@@ -87,21 +109,39 @@ async def get_card_leak_dashboard(start_date=None, end_date=None):
         else:
             not_blocked_count += r["count"]
 
+    # Daily Trend
+    pipeline_trend = [
+        {"$match": match_q},
+        {"$group": {
+            "_id": {
+                "$dateToString": {"format": "%Y-%m-%d", "date": "$date_first_seen"}
+            },
+            "count": {"$sum": 1}
+        }},
+        {"$sort": {"_id": 1}}
+    ]
+    trend_results = await col.aggregate(pipeline_trend).to_list(length=None)
+    daily_trend = {r["_id"]: r["count"] for r in trend_results if r["_id"]}
+
     return {
         "total": total,
+        "daily_trend": daily_trend,
         "card_systems": card_systems,
         "validation": {"valid": valid_count, "invalid": invalid_count},
         "blockir": {"blocked": blocked_count, "not_blocked": not_blocked_count}
     }
 
-async def get_account_leak_dashboard(start_date=None, end_date=None):
+async def get_account_leak_dashboard(time_filter="7d"):
     db = get_database()
     col = db["account_leak"]
     
-    total = await col.count_documents({})
+    match_q = await get_date_filter(col, time_filter, "date_first_seen")
+    
+    total = await col.count_documents(match_q)
     
     # Validation
     pipeline_val = [
+        {"$match": match_q},
         {"$group": {"_id": "$Validation", "count": {"$sum": 1}}}
     ]
     val_results = await col.aggregate(pipeline_val).to_list(length=None)
@@ -109,15 +149,14 @@ async def get_account_leak_dashboard(start_date=None, end_date=None):
     invalid_count = 0
     for r in val_results:
         val = r["_id"]
-        if not val or val == "" or (isinstance(val, float) and val != val):
-            valid_count += r["count"]
-        elif str(val).lower() == "valid":
+        if not val or val == "" or (isinstance(val, float) and val != val) or "not" not in str(val).lower():
             valid_count += r["count"]
         else:
             invalid_count += r["count"]
             
     # Reset Password Status
     pipeline_reset = [
+        {"$match": match_q},
         {"$group": {"_id": "$Reset Password Status", "count": {"$sum": 1}}}
     ]
     reset_results = await col.aggregate(pipeline_reset).to_list(length=None)
@@ -126,15 +165,14 @@ async def get_account_leak_dashboard(start_date=None, end_date=None):
     
     for r in reset_results:
         val = r["_id"]
-        if not val or val == "" or (isinstance(val, float) and val != val):
-            not_reset_count += r["count"]
-        elif "not" in str(val).lower():
+        if not val or val == "" or (isinstance(val, float) and val != val) or "not" in str(val).lower():
             not_reset_count += r["count"]
         else:
             reset_count += r["count"]
             
     # Domain Summary Table
     pipeline_domain = [
+        {"$match": match_q},
         {"$group": {
             "_id": "$service_host",
             "pic_team": {"$first": "$PIC Team"},

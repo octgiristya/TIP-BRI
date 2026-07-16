@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb bg-transparent p-0 mb-2">
+                <li class="breadcrumb-item"><a href="/card-leak" class="text-secondary text-decoration-none">Card Leak</a></li>
+                <li class="breadcrumb-item active text-primary" aria-current="page">Detail Table</li>
+            </ol>
+        </nav>
+        <h2 class="fw-bold mb-0 text-gradient">Card Leak Detailed Data</h2>
+        <p class="text-secondary">Comprehensive view of all credit card leak records with search and filter capabilities.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 fade-in-up">
+        <div class="glass-card">
+            <div class="glass-card-header d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-table me-2"></i> Card Leak Details</span>
+                <div>
+                    <button class="btn btn-sm btn-glass me-2" onclick="exportData('csv')"><i class="fa-solid fa-file-csv"></i> CSV</button>
+                    <button class="btn btn-sm btn-glass" onclick="exportData('excel')"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                </div>
+            </div>
+            <div class="glass-card-body p-0">
+                <table id="cardTable" class="table-glass">
+                    <thead>
+                        <tr>
+                            <th>Card Number</th>
+                            <th>Bank Name</th>
+                            <th>System</th>
+                            <th>Validation</th>
+                            <th>Block Status</th>
+                            <th>Leak Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in records %}
+                        <tr>
+                            <td>{{ r.get('card_number', '-') }}</td>
+                            <td>{{ r.get('card_issuer', '-') }}</td>
+                            <td>{{ r.get('card_system', '-') }}</td>
+                            <td>
+                                {% set val = r.get('Validation', '') %}
+                                {% if not val or val|string|lower == 'nan' or 'not' not in val|string|lower %}
+                                    <span class="badge-glass bg-success-soft">Valid</span>
+                                {% else %}
+                                    <span class="badge-glass bg-danger-soft">Not Valid</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% set block = r.get('Blockir Status', '') %}
+                                {% set is_blocked = block and 'block' in block|string|lower and 'not' not in block|string|lower %}
+                                <div class="form-check form-switch d-inline-block">
+                                    <input class="form-check-input progress-switch" type="checkbox" role="switch" 
+                                           data-id="{{ r.get('_id') }}" 
+                                           {% if is_blocked %}checked{% endif %}
+                                           onchange="toggleBlock('{{ r.get('_id') }}', this)">
+                                    <span class="ms-1 text-sm text-secondary switch-label">
+                                        {% if is_blocked %}Blocked{% else %}Not Blocked{% endif %}
+                                    </span>
+                                </div>
+                            </td>
+                            <td>{{ r.date_first_seen|string|truncate(10, True, '') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        new simpleDatatables.DataTable("#cardTable", {
+            searchable: true,
+            fixedHeight: false,
+            perPage: 10
+        });
+    });
+    
+    function exportData(type) {
+        window.showToast("Exporting " + type + "...", "info");
+    }
+    
+    function toggleBlock(recordId, checkbox) {
+        const label = checkbox.nextElementSibling;
+        const isChecked = checkbox.checked;
+        
+        // Optimistic UI update
+        label.textContent = isChecked ? "Blocked" : "Not Blocked";
+        
+        fetch(`/api/card-leak/toggle-block/${recordId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                // Revert on error
+                checkbox.checked = !isChecked;
+                label.textContent = !isChecked ? "Blocked" : "Not Blocked";
+                window.showToast('Failed to update status', 'error');
+            }
+        })
+        .catch(err => {
+            checkbox.checked = !isChecked;
+            label.textContent = !isChecked ? "Blocked" : "Not Blocked";
+            window.showToast('Failed to connect to server', 'error');
+        });
+    }
+</script>
+{% endblock %}

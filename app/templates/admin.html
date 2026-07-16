@@ -15,12 +15,20 @@
             <div class="glass-card-body">
                 <form id="uploadForm">
                     <div class="mb-4">
-                        <label class="form-label text-secondary">Target Collection</label>
-                        <select class="form-select" name="collection" required>
+                        <label class="form-label text-secondary d-flex justify-content-between align-items-center">
+                            <span>Target Collection</span>
+                            <span class="text-xs text-secondary"><i class="fa-solid fa-download me-1"></i> Excel Template:</span>
+                        </label>
+                        <select class="form-select" name="collection" id="collectionSelect" required>
                             <option value="brand_protection">Brand Protection</option>
                             <option value="card_leak">Card Leak</option>
                             <option value="account_leak">Account Leak</option>
                         </select>
+                        <div class="mt-2 d-flex gap-2" id="templateDownloadContainer">
+                            <a href="/static/templates/brand_protection_template.xlsx" class="btn btn-sm btn-glass w-100 text-xs py-1" id="downloadBP" download><i class="fa-solid fa-file-excel me-1 text-success"></i> Download Brand Protection Template</a>
+                            <a href="/static/templates/card_leak_template.xlsx" class="btn btn-sm btn-glass w-100 text-xs py-1 d-none" id="downloadCL" download><i class="fa-solid fa-file-excel me-1 text-success"></i> Download Card Leak Template</a>
+                            <a href="/static/templates/account_leak_template.xlsx" class="btn btn-sm btn-glass w-100 text-xs py-1 d-none" id="downloadAL" download><i class="fa-solid fa-file-excel me-1 text-success"></i> Download Account Leak Template</a>
+                        </div>
                     </div>
                     
                     <div class="mb-4">
@@ -73,6 +81,25 @@
         const progressContainer = document.getElementById('uploadProgressContainer');
         const progress = document.getElementById('uploadProgress');
         
+        const collectionSelect = document.getElementById('collectionSelect');
+        const downloadBP = document.getElementById('downloadBP');
+        const downloadCL = document.getElementById('downloadCL');
+        const downloadAL = document.getElementById('downloadAL');
+        
+        collectionSelect.addEventListener('change', function() {
+            downloadBP.classList.add('d-none');
+            downloadCL.classList.add('d-none');
+            downloadAL.classList.add('d-none');
+            
+            if (this.value === 'brand_protection') {
+                downloadBP.classList.remove('d-none');
+            } else if (this.value === 'card_leak') {
+                downloadCL.classList.remove('d-none');
+            } else if (this.value === 'account_leak') {
+                downloadAL.classList.remove('d-none');
+            }
+        });
+
         loadHistory();
         
         form.addEventListener('submit', function(e) {

@@ -48,9 +48,13 @@
                     </li>
                 </ul>
                 <div class="d-flex align-items-center">
-                    <div class="input-group me-3" style="width: 250px;">
-                        <span class="input-group-text bg-transparent border-end-0 border-color"><i class="fa-regular fa-calendar"></i></span>
-                        <input type="text" class="form-control border-start-0 ps-0" id="global-date-range" placeholder="Last 7 Days (Select Date)">
+                    <div class="d-flex align-items-center me-3">
+                        <select class="form-select select-glass form-select-sm w-auto" id="timeFilter">
+                            <option value="7d" {% if current_time_filter == '7d' %}selected{% endif %}>Last 7 Days</option>
+                            <option value="30d" {% if current_time_filter == '30d' %}selected{% endif %}>Last 30 Days</option>
+                            <option value="all" {% if current_time_filter == 'all' %}selected{% endif %}>All Time</option>
+                        </select>
+                        <button class="btn btn-sm btn-primary-glow ms-2" onclick="applyTimeFilter()">GO</button>
                     </div>
                     {% if request.session.get('is_admin') %}
                         <a href="/godcia/" class="btn btn-sm btn-glass me-2"><i class="fa-solid fa-gear"></i> Admin</a>
@@ -78,6 +82,17 @@
     
     <!-- Custom JS -->
     <script src="/static/js/main.js"></script>
+    <script>
+        function applyTimeFilter() {
+            const selectEl = document.getElementById('timeFilter');
+            if (selectEl) {
+                const value = selectEl.value;
+                const urlParams = new URLSearchParams(window.location.search);
+                urlParams.set('time', value);
+                window.location.search = urlParams.toString();
+            }
+        }
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

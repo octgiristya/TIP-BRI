@@ -2,9 +2,14 @@
 
 {% block content %}
 <div class="row mb-4">
-    <div class="col-12">
-        <h2 class="fw-bold mb-0 text-gradient">Brand Protection Dashboard</h2>
-        <p class="text-secondary">Monitoring malicious domains, documents, and social media impersonations.</p>
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="fw-bold mb-0 text-gradient">Brand Protection Dashboard</h2>
+            <p class="text-secondary">Monitoring malicious domains, documents, and social media impersonations.</p>
+        </div>
+        <a class="btn btn-primary-glow" href="/brand-protection/detail">
+            <i class="fa-solid fa-list me-2"></i> View Detail Table
+        </a>
     </div>
 </div>
 
@@ -13,14 +18,17 @@
     <div class="col-xl-3 col-md-6 fade-in-up delay-{{ loop.index0 * 100 }}">
         <div class="glass-card h-100">
             <div class="glass-card-header d-flex justify-content-between align-items-center">
-                <span>{{ res }}</span>
                 {% if res == 'Website' %}
+                    <span>Total Domain</span>
                     <i class="fa-solid fa-globe text-primary"></i>
                 {% elif res == 'Document' %}
+                    <span>Total Document</span>
                     <i class="fa-solid fa-file-pdf text-danger"></i>
                 {% elif res == 'Social Media' %}
+                    <span>Total Sosmed</span>
                     <i class="fa-brands fa-twitter text-info"></i>
                 {% else %}
+                    <span>Total Instant Messenger</span>
                     <i class="fa-solid fa-comment-sms text-success"></i>
                 {% endif %}
             </div>
@@ -31,7 +39,7 @@
                         <div class="kpi-label">Total Findings</div>
                     </div>
                     <div style="height: 60px; width: 60px;">
-                        <canvas id="chart-{{ loop.index }}"></canvas>
+                        <div id="chart-{{ res|replace(' ', '_') }}"></div>
                     </div>
                 </div>
                 
@@ -58,37 +66,28 @@
     {% endfor %}
 </div>
 {% endblock %}
-
+ 
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const kpis = {{ kpis|tojson|safe }};
-        let index = 1;
         for (const [res, data] of Object.entries(kpis)) {
-            const ctx = document.getElementById(`chart-${index}`);
-            if (ctx && data.total > 0) {
-                new Chart(ctx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Resolved', 'Not Resolved'],
-                        datasets: [{
-                            data: [data.resolved, data.not_resolved],
-                            backgroundColor: ['#10b981', '#ef4444'],
-                            borderWidth: 0,
-                            cutout: '75%'
-                        }]
+            const el = document.getElementById('chart-' + res.replace(' ', '_'));
+            if (el && data.total > 0) {
+                const chart = new ApexCharts(el, {
+                    chart: {
+                        type: 'donut',
+                        width: 60,
+                        height: 60,
+                        sparkline: { enabled: true }
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { enabled: false }
-                        }
-                    }
+                    series: [data.resolved, data.not_resolved],
+                    colors: ['#10b981', '#ef4444'],
+                    stroke: { show: false },
+                    tooltip: { enabled: false }
                 });
+                chart.render();
             }
-            index++;
         }
     });
 </script>
