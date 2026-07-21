@@ -7,11 +7,11 @@ def sanitize_for_mongo(record):
             record[k] = str(v)
     return record
 
-async def import_excel_to_mongo(file_path: str, collection_name: str) -> dict:
+async def import_excel_to_mongo(file_path: str, collection_name: str, mode: str = "replace") -> dict:
     """
     Reads an Excel file, converts all columns to dicts, 
     detects datetimes automatically (handled by pandas), 
-    drops the collection, and inserts new records.
+    drops the collection (if mode is replace), and inserts new records.
     Returns a dict with statistics.
     """
     try:
@@ -30,8 +30,9 @@ async def import_excel_to_mongo(file_path: str, collection_name: str) -> dict:
         db = get_database()
         collection = db[collection_name]
 
-        # Drop existing
-        await collection.drop()
+        # Drop existing only if in replace mode
+        if mode == "replace":
+            await collection.drop()
 
         if records:
             # Insert new

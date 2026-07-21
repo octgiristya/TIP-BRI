@@ -34,7 +34,7 @@ async def logout(request: Request):
     return RedirectResponse(url="/")
 
 @router.post("/upload")
-async def upload_file(request: Request, collection: str = Form(...), file: UploadFile = File(...)):
+async def upload_file(request: Request, collection: str = Form(...), mode: str = Form("replace"), file: UploadFile = File(...)):
     if not request.session.get("is_admin"):
         return RedirectResponse(url="/godcia/login")
         
@@ -53,7 +53,7 @@ async def upload_file(request: Request, collection: str = Form(...), file: Uploa
         buffer.write(await file.read())
         
     # Process file
-    result = await import_excel_to_mongo(file_path, collection)
+    result = await import_excel_to_mongo(file_path, collection, mode=mode)
     
     # Store history (Bonus feature)
     from app.database import get_database
@@ -63,6 +63,7 @@ async def upload_file(request: Request, collection: str = Form(...), file: Uploa
         "timestamp": time.time(),
         "collection": collection,
         "filename": file.filename,
+        "mode": mode,
         "inserted_count": result["inserted_count"],
         "success": result["success"],
         "message": result["message"]
@@ -83,3 +84,41 @@ async def upload_history(request: Request):
         h["_id"] = str(h["_id"])
         
     return {"history": history}
+
+@router.post("/history/delete/{history_id}")
+async def delete_history_entry(request: Request, history_id: str):
+    if not request.session.get("is_admin"):
+        return {"success": False, "message": "Unauthorized"}
+        
+    from app.database import get_database
+    from bson import ObjectId
+    db = get_database()
+    
+    entry = await db["import_history"].find_one({"_id": ObjectId(history_id)})
+    if not entry:
+        return {"success": False, "message": "History entry not found"}
+        
+    collection_name = entry.get("collection")
+    
+    # Delete the history entry
+    await db["import_history"].delete_one({"_id": ObjectId(history_id)})
+    
+    # Clear target collection
+    if collection_name in ["brand_protection", "card_leak", "account_leak"]:
+        await db[collection_name].delete_many({})
+        
+    return {"success": True, "message": f"Successfully deleted history and cleared {collection_name} data."}
+
+@router.post("/delete-all")
+async def delete_all_data(request: Request):
+    if not request.session.get("is_admin"):
+        return {"success": False, "message": "Unauthorized"}
+        
+    from app.database import get_database
+    db = get_database()
+    
+    collections = ["brand_protection", "card_leak", "account_leak", "import_history"]
+    for col in collections:
+        await db[col].delete_many({})
+        
+    return {"success": True, "message": "All data and upload history have been cleared successfully."}

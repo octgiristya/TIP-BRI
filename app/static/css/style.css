@@ -181,6 +181,21 @@ body {
     color: white;
 }
 
+.btn-glass-danger {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    backdrop-filter: blur(4px);
+    transition: all 0.3s;
+}
+
+.btn-glass-danger:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: white;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+}
+
 .btn-primary-glow {
     background: var(--accent-blue);
     color: white;
